@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Calendar;
 
 public class EsohWebServer {
 
@@ -18,40 +19,46 @@ public class EsohWebServer {
 	public void run() throws Exception {
 		ServerSocket serverSocket = new ServerSocket(port);
 
-		Socket clientSocket = serverSocket.accept();
-		InputStream clientSocketInputStream = clientSocket.getInputStream();
-		InputStreamReader inputStreamReader = new InputStreamReader(clientSocketInputStream);
-		BufferedReader reader = new BufferedReader(inputStreamReader);
+		while (true) {
+			final Socket clientSocket = serverSocket.accept();
+			InputStream clientSocketInputStream = clientSocket.getInputStream();
 
-		String clientText;
-		while ((clientText = reader.readLine()) != null && !clientText.isEmpty()) {
-			System.out.println(clientText);
+			new Thread(() -> {
+				try {
+					InputStreamReader inputStreamReader = new InputStreamReader(clientSocketInputStream);
+					BufferedReader reader = new BufferedReader(inputStreamReader);
+
+					String clientText;
+
+					while ((clientText = reader.readLine()) != null && !clientText.isEmpty()) {
+						System.out.println(clientText);
+					}
+
+					String response = getResponse();
+
+					PrintWriter writer = new PrintWriter(clientSocket.getOutputStream());
+					writer.println("HTTP/1.1 200 OK");
+					writer.println("Date: Tue, 22 Nov 2016 16:21:12 GMT");
+					writer.println("Server: Apache");
+					writer.println("Expires: Thu, 19 Nov 1981 08:52:00 GMT");
+					writer.println("Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
+					writer.println("Pragma: no-cache");
+					writer.println("Content-Length: " + response.getBytes().length);
+					writer.println("X-Powered-By: PleskLin");
+					writer.println("Connection: close");
+					writer.println("Content-Type: text/html; charset=UTF-8");
+					writer.println("");
+					writer.println(response);
+					writer.flush();
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}).start();
 		}
-
-		String response = getResponse();
-
-		PrintWriter writer = new PrintWriter(clientSocket.getOutputStream());
-		writer.println("HTTP/1.1 200 OK");
-		writer.println("Date: Tue, 22 Nov 2016 16:21:12 GMT");
-		writer.println("Server: Apache");
-		writer.println("Expires: Thu, 19 Nov 1981 08:52:00 GMT");
-		writer.println("Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
-		writer.println("Pragma: no-cache");
-		writer.println("Content-Length: " + response.getBytes().length);
-		writer.println("X-Powered-By: PleskLin");
-		writer.println("Connection: close");
-		writer.println("Content-Type: text/html; charset=UTF-8");
-		writer.println("");
-		writer.println(response);
-		writer.flush();
-
-		clientSocket.close();
-		serverSocket.close();
-
-		System.out.println("We're closed! Bye!");
 	}
 
 	private String getResponse() {
-		return "<html>hello world</html>";
+		return "<html>hello world " + Calendar.getInstance().getTime() + "</html>";
 	}
 }
